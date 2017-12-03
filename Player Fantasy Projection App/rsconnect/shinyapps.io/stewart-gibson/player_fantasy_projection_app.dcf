@@ -1,0 +1,13 @@
+name: player_fantasy_projection_app
+title: Player_Fantasy_Projection_App
+username:
+account: stewart-gibson
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 241401
+bundleId: 1103035
+url: https://stewart-gibson.shinyapps.io/player_fantasy_projection_app/
+when: 1511927411.12348
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: Player Fantasy Projection App.R
