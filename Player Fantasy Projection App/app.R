@@ -41,16 +41,26 @@ for (i in 1:nrow(avg.DKP)) {
 
 ################# The App ########################
 ui <- fluidPage(
-  titlePanel("Advanced Sports Analytics NBA Player Fantasy Projection App"),
-  selectInput(inputId = "Player1", label = "Player 1",
-              choices = c("",sort(unique(NBA_17$Last..First))), multiple = F),
-  sliderInput(inputId = "Over.Under1", label = "Over/Under 1", min = 180, max = 240, step = 0.5,
-              value = 210),
-  sliderInput(inputId = "Spread1", label = "Spread 1", min = -25, max = 25, step = 0.5, value = 0),
-  selectInput(inputId = "Opponent1", label = "Opponent 1",
-              choices = c("",sort(toupper(unique(NBA_17$Opp)))), multiple = F),
-  selectInput(inputId = "H.A", label = "Home/Away 1", choices = c("Home","Away"), multiple = F),
-  plotOutput(outputId = "chart")
+  fluidRow(
+    titlePanel("Advanced Sports Analytics NBA Player Fantasy Projection App"),
+    
+    column(2,wellPanel(
+      selectInput(inputId = "Player1", label = "Player 1",
+                  choices = c("",sort(unique(NBA_17$Last..First))), multiple = F),
+      numericInput(inputId = "Over.Under1", label = "Over/Under 1", step = 0.5, value = 210),
+      numericInput(inputId = "Spread1", label = "Spread 1", step = 0.5, value  = 0),
+      # sliderInput(inputId = "Over.Under1", label = "Over/Under 1", min = 180, max = 240, step = 0.5,
+      #             value = 210),
+      # sliderInput(inputId = "Spread1", label = "Spread 1", min = -25, max = 25, step = 0.5, value = 0),
+      selectInput(inputId = "Opponent1", label = "Opponent 1",
+                  choices = c("",sort(toupper(unique(NBA_17$Opp)))), multiple = F),
+      selectInput(inputId = "H.A", label = "Home/Away 1", choices = c("Home","Away"), multiple = F),
+      submitButton("Submit")
+      
+    )),
+    column(8,  plotOutput(outputId = "chart"))
+  )
+  
 )
 
 server <- function(input, output) {
