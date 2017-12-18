@@ -23,4 +23,5 @@ NBA_17$DK_PF[which(grepl("4",NBA_17$DK.pos))] <- 1
 NBA_17$DK_C[which(grepl("5",NBA_17$DK.pos))] <- 1
 
 ## Save data
-save.image("~/Documents/ASA/ASA Site Content/data/NBA_2017.RData")
+save.image("data/NBA_2017.RData")
+save.image("Player Fantasy Projection App/NBA_2017.RData")
