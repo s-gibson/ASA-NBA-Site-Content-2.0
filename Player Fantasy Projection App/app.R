@@ -13,6 +13,7 @@ load("NBA_2017.RData")
 require(rsconnect)
 require(shiny)
 require(ggplot2)
+require(xtable)
 
 NBA_17$Last..First <- as.character(NBA_17$Last..First)
 iter <- 1000
@@ -146,18 +147,24 @@ server <- function(input, output) {
               se.fit = T)$se.fit)
     
     ### Player proportion x Team regression
+    
+    ### Determine TPPs
+    # TPP_samples <- data.frame(Player1 = sample(density(rowMeans(Projections_Player1[,1:4]))$x, 
+    #                                            iter, replace = T, 
+    #                                            prob = density(rowMeans(Projections_Player1[,1:4]))$y))
+    # TPP_table <- data.frame(Player1 = as.numeric(table(apply(TPP_samples,1,"which.max"))[1])/iter)
+    
 
     ### Produce distribution of projections
     ggplot() +
       geom_density(aes(x = rowMeans(Projections_Player1[,1:4]), #as.numeric(unlist(Projections_Player1[,1:4]))
-                       color = dat.player1$Last..First[1], fill = dat.player1$Last..First[1]),
+                       color = paste(dat.player1$Last..First[1], ": ", 100,"%", sep = ""), 
+                       fill = paste(dat.player1$Last..First[1], ": ", 100,"%", sep = "")),
                    alpha = 0.5) +
-      # geom_vline(aes(xintercept = sort(rowMeans(Projections_Player1[,1:4]))[c(round(iter*.25),round(iter*.5),round(iter*.75))],
-      #                color = dat.player1$Last..First[1]), lty = 2, alpha = 0.75) +
       xlab("Projected DKP") +
       ylab("Density") +
-      scale_color_discrete(name = "Player") +
-      scale_fill_discrete(name = "Player") +
+      scale_color_discrete(name = "Player: Top Player Probability") +
+      scale_fill_discrete(name = "Player: Top Player Probability") +
       ggtitle("Player DKP Projection") +
       theme(plot.title = element_text(hjust = 0.5))
     
@@ -293,22 +300,30 @@ server <- function(input, output) {
     
     ### Player proportion x Team regression
     
+    ### Determine TPPs
+    TPP_samples <- data.frame(Player1 = sample(density(rowMeans(Projections_Player1[,1:4]))$x, 
+                                               iter, replace = T, 
+                                               prob = density(rowMeans(Projections_Player1[,1:4]))$y),
+                              Player2 = sample(density(rowMeans(Projections_Player2[,1:4]))$x, 
+                                               iter, replace = T, 
+                                               prob = density(rowMeans(Projections_Player2[,1:4]))$y))
+    TPP_table <- data.frame(Player1 = sum(apply(TPP_samples,1,"which.max")==1)/iter,
+                            Player2 = sum(apply(TPP_samples,1,"which.max")==2)/iter)
+    
     ### Produce distribution of projections
     ggplot() +
       geom_density(aes(x = rowMeans(Projections_Player1[,1:4]), #as.numeric(unlist(Projections_Player1[,1:4]))
-                       color = dat.player1$Last..First[1], fill = dat.player1$Last..First[1]),
+                       color = paste(dat.player1$Last..First[1], ": ", round(TPP_table[,1]*100),"%", sep = ""), 
+                       fill = paste(dat.player1$Last..First[1], ": ", round(TPP_table[,1]*100),"%", sep = "")),
                    alpha = 0.5) +
       geom_density(aes(x = rowMeans(Projections_Player2[,1:4]), #as.numeric(unlist(Projections_Player1[,1:4]))
-                       color = dat.player2$Last..First[1], fill = dat.player2$Last..First[1]),
+                       color = paste(dat.player2$Last..First[1], ": ", round(TPP_table[,2]*100),"%", sep = ""), 
+                       fill = paste(dat.player2$Last..First[1], ": ", round(TPP_table[,2]*100),"%", sep = "")),
                    alpha = 0.5) +
-      # geom_vline(aes(xintercept = sort(rowMeans(Projections_Player1[,1:4]))[c(round(iter*.25),round(iter*.5),round(iter*.75))],
-      #                color = dat.player1$Last..First[1]), lty = 2, alpha = 0.75) +
-      # geom_vline(aes(xintercept = sort(rowMeans(Projections_Player2[,1:4]))[c(round(iter*.25),round(iter*.5),round(iter*.75))],
-      #                color = dat.player2$Last..First[1]), lty = 2, alpha = 0.75) +
       xlab("Projected DKP") +
       ylab("Density") +
-      scale_color_discrete(name = "Player") +
-      scale_fill_discrete(name = "Player") +
+      scale_color_discrete(name = "Player: Top Player Probability") +
+      scale_fill_discrete(name = "Player: Top Player Probability") +
       ggtitle("Player DKP Projection") +
       theme(plot.title = element_text(hjust = 0.5))
     
@@ -505,23 +520,34 @@ server <- function(input, output) {
     
     ### Player proportion x Team regression
     
+    ### Determine TPPs
+    TPP_samples <- data.frame(Player1 = sample(density(rowMeans(Projections_Player1[,1:4]))$x, 
+                                               iter, replace = T, 
+                                               prob = density(rowMeans(Projections_Player1[,1:4]))$y),
+                              Player2 = sample(density(rowMeans(Projections_Player2[,1:4]))$x, 
+                                               iter, replace = T, 
+                                               prob = density(rowMeans(Projections_Player2[,1:4]))$y),
+                              Player3 = sample(density(rowMeans(Projections_Player3[,1:4]))$x, 
+                                               iter, replace = T, 
+                                               prob = density(rowMeans(Projections_Player3[,1:4]))$y))
+    TPP_table <- data.frame(Player1 = sum(apply(TPP_samples,1,"which.max")==1)/iter,
+                            Player2 = sum(apply(TPP_samples,1,"which.max")==2)/iter,
+                            Player3 = sum(apply(TPP_samples,1,"which.max")==3)/iter)
+    
     ### Produce distribution of projections
     ggplot() +
       geom_density(aes(x = rowMeans(Projections_Player1[,1:4]), #as.numeric(unlist(Projections_Player1[,1:4]))
-                       color = dat.player1$Last..First[1], fill = dat.player1$Last..First[1]),
+                       color = paste(dat.player1$Last..First[1], ": ", round(TPP_table[,1]*100),"%", sep = ""), 
+                       fill = paste(dat.player1$Last..First[1], ": ", round(TPP_table[,1]*100),"%", sep = "")),
                    alpha = 0.5) +
       geom_density(aes(x = rowMeans(Projections_Player2[,1:4]), #as.numeric(unlist(Projections_Player1[,1:4]))
-                       color = dat.player2$Last..First[1], fill = dat.player2$Last..First[1]),
+                       color = paste(dat.player2$Last..First[1], ": ", round(TPP_table[,2]*100),"%", sep = ""), 
+                       fill = paste(dat.player2$Last..First[1], ": ", round(TPP_table[,2]*100),"%", sep = "")),
                    alpha = 0.5) +
       geom_density(aes(x = rowMeans(Projections_Player3[,1:4]), #as.numeric(unlist(Projections_Player1[,1:4]))
-                       color = dat.player3$Last..First[1], fill = dat.player3$Last..First[1]),
+                       color = paste(dat.player3$Last..First[1], ": ", round(TPP_table[,3]*100),"%", sep = ""), 
+                       fill = paste(dat.player3$Last..First[1], ": ", round(TPP_table[,3]*100),"%", sep = "")),
                    alpha = 0.5) +
-      # geom_vline(aes(xintercept = sort(rowMeans(Projections_Player1[,1:4]))[c(round(iter*.25),round(iter*.5),round(iter*.75))],
-      #                color = dat.player1$Last..First[1]), lty = 2, alpha = 0.75) +
-      # geom_vline(aes(xintercept = sort(rowMeans(Projections_Player2[,1:4]))[c(round(iter*.25),round(iter*.5),round(iter*.75))],
-      #                color = dat.player2$Last..First[1]), lty = 2, alpha = 0.75) +
-      # geom_vline(aes(xintercept = sort(rowMeans(Projections_Player3[,1:4]))[c(round(iter*.25),round(iter*.5),round(iter*.75))],
-      #                color = dat.player3$Last..First[1]), lty = 2, alpha = 0.75) +
       xlab("Projected DKP") +
       ylab("Density") +
       scale_color_discrete(name = "Player") +
@@ -530,9 +556,7 @@ server <- function(input, output) {
       theme(plot.title = element_text(hjust = 0.5))
     
   } else {}
-    
-    
   })
-  }
+}
 
 shinyApp(ui = ui, server = server)
