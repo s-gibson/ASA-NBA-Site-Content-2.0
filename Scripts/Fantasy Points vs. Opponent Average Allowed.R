@@ -73,13 +73,13 @@ for (i in 1:length(uniq.teams)) {
   dat$Opp.Avg.Tot <- rowMeans(dat[,c(42:46)], na.rm = T)
   
   ggplot(data = dat[which(!is.na(dat$DKP) & dat$active == 1),], aes(x = Opp.Avg.Tot, y = DKP, color = Initial.Last, group = Initial.Last)) +
-    geom_point() +
-    geom_smooth(method = 'lm',formula = y ~ log(x), se = F) +
+    geom_point(size = 0.5) +
+    geom_smooth(method = 'lm',formula = y ~ log(x), se = F, size = 0.5) +
     xlab("Opponent Position DKP Allowed") +
     ylab("Fantasy Points") +
     ggtitle(paste(toupper(uniq.teams[i]), "Fantasy Points vs. Opponent Average Allowed")) +
     scale_color_discrete(name = "Player") +
-    scale_x_continuous(limits = c(min(avg.DKP[,-1]),max(avg.DKP[,-1])))
+    # scale_x_continuous(limits = c(min(avg.DKP[,-1]),max(avg.DKP[,-1])))
     theme(plot.title = element_text(hjust = 0.5))
   
   ggsave(paste("Visualizations/Fantasy Points vs. Opponent Average Allowed/",uniq.teams[i],
