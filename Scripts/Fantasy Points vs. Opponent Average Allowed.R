@@ -67,10 +67,10 @@ for (i in 1:length(uniq.teams)) {
   
   # Set 'opponent averages' of positions that don't apply to each player to NA
   for (p in 1:nrow(dat)) {
-    dat[p,which(dat[p, c(36:40)] == 0) + 42] <- NA
+    dat[p,which(dat[p, c(36:40)] == 0) + 41] <- NA
   }
 
-  dat$Opp.Avg.Tot <- rowMeans(dat[,c(43:47)], na.rm = T)
+  dat$Opp.Avg.Tot <- rowMeans(dat[,c(42:46)], na.rm = T)
   
   ggplot(data = dat[which(!is.na(dat$DKP) & dat$active == 1),], aes(x = Opp.Avg.Tot, y = DKP, color = Initial.Last, group = Initial.Last)) +
     geom_point() +
