@@ -12,7 +12,7 @@ require(ggplot2)
 load("data/NBA_2017.RData")
 
 ## Consideration cutoff: How many DKP must a player score to be considered for correlation?
-cutoff <- 50
+cutoff <- 200
 
 ## Loop through all teams
 uniq.teams <- sort(unique(NBA_17$Team))
