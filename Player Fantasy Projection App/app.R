@@ -6,16 +6,16 @@
 #####################################
 
 ### Set working directory
-# setwd("Player Fantasy Projection App")
+# setwd("~/Documents/ASA/ASA Site Content/NBA/Player Fantasy Projection App")
 
 ### Load data and packages
 load("NBA_2017.RData")
 require(rsconnect)
 require(shiny)
 require(ggplot2)
-require(xtable)
 
 NBA_17$Last..First <- as.character(NBA_17$Last..First)
+levels(NBA_17$H.A) <- c("Away","Home")
 iter <- 1000
 
 ### First calculate teams' average fantasy points allowed to each position per game.  
@@ -107,11 +107,11 @@ server <- function(input, output) {
     ### Point total regression
     player1.Project_2.reg <- lm(data = dat.player1, formula = DKP ~ poly(Team.pts, 3))
     Projections_Player1$Project_2 <- rep(predict.lm(object = player1.Project_2.reg, 
-                                                    newdata = data.frame(Team.pts = input$Over.Under1/2 - input$Spread2/2)),iter)
+                                                    newdata = data.frame(Team.pts = input$Over.Under1/2 - input$Spread1/2)),iter)
     Projections_Player1$Project_2 <- Projections_Player1$Project_2 +
       rnorm(iter, mean = 0, 
             sd = predict.lm(object = player1.Project_2.reg, 
-                            newdata = data.frame(Team.pts = input$Over.Under1/2 - input$Spread2/2),
+                            newdata = data.frame(Team.pts = input$Over.Under1/2 - input$Spread1/2),
                             se.fit = T)$se.fit)
     
     ### Spread regression
@@ -119,18 +119,19 @@ server <- function(input, output) {
     player1.Project_3.reg <- lm(data = dat.player1, formula = DKP ~ poly(Spread, 3))
     Projections_Player1$Project_3 <- rep(predict.lm(object = player1.Project_3.reg, 
                                                     newdata = data.frame(Spread = 
-                                                                           input$Spread2)),iter)
+                                                                           input$Spread1)),iter)
     Projections_Player1$Project_3 <- Projections_Player1$Project_3 +
       rnorm(iter, mean = 0, 
             sd = predict.lm(object = player1.Project_3.reg, 
-                            newdata = data.frame(Spread = input$Spread2),
+                            newdata = data.frame(Spread = input$Spread1),
                             se.fit = T)$se.fit)
     
     ### Opponent average DKP allowed regression
     dat.player1 <- merge(dat.player1, 
                          avg.DKP[,c(1,as.numeric(which(colMeans(dat.player1[,36:40]) > 0.75)+1))], by = "Opp")
-    dat.player1$Opp.Avg.All <- 
+    dat.player1$Opp.Avg.All <- if (length(which(grepl("Opp.Avg", colnames(dat.player1)))) > 1) {
       rowMeans(dat.player1[,which(grepl("Opp.Avg", colnames(dat.player1)))])
+    } else (dat.player1[,which(grepl("Opp.Avg", colnames(dat.player1)))])
     
     player1.Project_4.reg <- lm(data = dat.player1, formula = DKP ~ poly(Opp.Avg.All, 3))
     Projections_Player1$Project_4 <- 
@@ -147,24 +148,34 @@ server <- function(input, output) {
               se.fit = T)$se.fit)
     
     ### Player proportion x Team regression
+    for (i in 1:nrow(dat.player1)) {
+      dat.player1$Team.DKP[i] <- sum(dat.team1$DKP[which(
+        dat.team1$GameID == dat.player1$GameID[i])],na.rm = T)
+      dat.player1$DKP.Prop[i] <- dat.player1$DKP[i]/dat.player1$Team.DKP[i]
+    }
     
-    ### Determine TPPs
-    # TPP_samples <- data.frame(Player1 = sample(density(rowMeans(Projections_Player1[,1:4]))$x, 
-    #                                            iter, replace = T, 
-    #                                            prob = density(rowMeans(Projections_Player1[,1:4]))$y))
-    # TPP_table <- data.frame(Player1 = as.numeric(table(apply(TPP_samples,1,"which.max"))[1])/iter)
+    player1.Project_5.reg <- lm(data = dat.player1, formula = Team.DKP ~ Spread + Team.pts + H.A)
+    Projections_Player1$Project_5 <- rep(predict.lm(object = player1.Project_5.reg, 
+                                                    newdata = data.frame(Spread = input$Spread1,
+                                                                         Team.pts = input$Over.Under1/2 - input$Spread1/2,
+                                                                         H.A = input$H.A1)),iter)
+    Projections_Player1$Project_5 <- Projections_Player1$Project_5 +
+      rnorm(iter, mean = 0, 
+            sd = summary(player1.Project_5.reg)$sigma)
     
-
+    Projections_Player1$Project_5 <- Projections_Player1$Project_5 *
+      sample(x = density(dat.player1$DKP.Prop)$x, size = iter, replace = T, prob = density(dat.player1$DKP.Prop)$y)
+    
     ### Produce distribution of projections
     ggplot() +
-      geom_density(aes(x = rowMeans(Projections_Player1[,1:4]), #as.numeric(unlist(Projections_Player1[,1:4]))
-                       color = paste(dat.player1$Last..First[1], ": ", 100,"%", sep = ""), 
-                       fill = paste(dat.player1$Last..First[1], ": ", 100,"%", sep = "")),
+      geom_density(aes(x = rowMeans(Projections_Player1[,1:5]), #as.numeric(unlist(Projections_Player1[,1:5]))
+                       color = paste(dat.player1$Last..First[1], ": 100%", sep = ""), 
+                       fill = paste(dat.player1$Last..First[1], ": 100%", sep = "")),
                    alpha = 0.5) +
       xlab("Projected DKP") +
       ylab("Density") +
-      scale_color_discrete(name = "Player: Top Player Probability") +
-      scale_fill_discrete(name = "Player: Top Player Probability") +
+      scale_color_discrete(name = "Player") +
+      scale_fill_discrete(name = "Player") +
       ggtitle("Player DKP Projection") +
       theme(plot.title = element_text(hjust = 0.5))
     
@@ -299,31 +310,71 @@ server <- function(input, output) {
               se.fit = T)$se.fit)
     
     ### Player proportion x Team regression
+    # Player 1
+    for (i in 1:nrow(dat.player1)) {
+      dat.player1$Team.DKP[i] <- sum(dat.team1$DKP[which(
+        dat.team1$GameID == dat.player1$GameID[i])],na.rm = T)
+      dat.player1$DKP.Prop[i] <- dat.player1$DKP[i]/dat.player1$Team.DKP[i]
+    }
     
-    ### Determine TPPs
-    TPP_samples <- data.frame(Player1 = sample(density(rowMeans(Projections_Player1[,1:4]))$x, 
-                                               iter, replace = T, 
-                                               prob = density(rowMeans(Projections_Player1[,1:4]))$y),
-                              Player2 = sample(density(rowMeans(Projections_Player2[,1:4]))$x, 
-                                               iter, replace = T, 
-                                               prob = density(rowMeans(Projections_Player2[,1:4]))$y))
-    TPP_table <- data.frame(Player1 = sum(apply(TPP_samples,1,"which.max")==1)/iter,
-                            Player2 = sum(apply(TPP_samples,1,"which.max")==2)/iter)
+    player1.Project_5.reg <- lm(data = dat.player1, formula = Team.DKP ~ Spread + Team.pts + H.A)
+    Projections_Player1$Project_5 <- rep(predict.lm(object = player1.Project_5.reg, 
+                                                    newdata = data.frame(Spread = input$Spread1,
+                                                                         Team.pts = input$Over.Under1/2 - input$Spread1/2,
+                                                                         H.A = input$H.A1)),iter)
+    Projections_Player1$Project_5 <- Projections_Player1$Project_5 +
+      rnorm(iter, mean = 0, 
+            sd = summary(player1.Project_5.reg)$sigma)
+    
+    Projections_Player1$Project_5 <- Projections_Player1$Project_5 *
+      sample(x = density(dat.player1$DKP.Prop)$x, size = iter, replace = T, prob = density(dat.player1$DKP.Prop)$y)
+    
+    # Player 2
+    for (j in 1:nrow(dat.player2)) {
+      dat.player2$Team.DKP[j] <- sum(dat.team2$DKP[which(
+        dat.team2$GameID == dat.player2$GameID[j])],na.rm = T)
+      dat.player2$DKP.Prop[j] <- dat.player2$DKP[j]/dat.player2$Team.DKP[j]
+    }
+    
+    player2.Project_5.reg <- lm(data = dat.player2, formula = Team.DKP ~ Spread + Team.pts + H.A)
+    Projections_Player2$Project_5 <- rep(predict.lm(object = player2.Project_5.reg, 
+                                                    newdata = data.frame(Spread = input$Spread2,
+                                                                         Team.pts = input$Over.Under2/2 - input$Spread2/2,
+                                                                         H.A = input$H.A2)),iter)
+    Projections_Player2$Project_5 <- Projections_Player2$Project_5 +
+      rnorm(iter, mean = 0, 
+            sd = summary(player2.Project_5.reg)$sigma)
+    
+    Projections_Player2$Project_5 <- Projections_Player2$Project_5 *
+      sample(x = density(dat.player2$DKP.Prop)$x, size = iter, replace = T, prob = density(dat.player2$DKP.Prop)$y)
+    
+    ### Get TPPs
+    TPP_draws <- data.frame(Player1 = sample(x = density(unlist(as.list(Projections_Player1[,1:5])))$x,
+                                             size = iter,
+                                             replace = T,
+                                             prob = density(unlist(as.list(Projections_Player1[,1:5])))$y),
+                            Player2 = sample(x = density(unlist(as.list(Projections_Player2[,1:5])))$x,
+                                             size = iter,
+                                             replace = T,
+                                             prob = density(unlist(as.list(Projections_Player2[,1:5])))$y))
+    
+    TPP_table <- data.frame(Player1 = length(which(apply(TPP_draws, 1, FUN = "which.max") == 1))/iter,
+                            Player2 = length(which(apply(TPP_draws, 1, FUN = "which.max") == 2))/iter)
     
     ### Produce distribution of projections
     ggplot() +
-      geom_density(aes(x = rowMeans(Projections_Player1[,1:4]), #as.numeric(unlist(Projections_Player1[,1:4]))
-                       color = paste(dat.player1$Last..First[1], ": ", round(TPP_table[,1]*100),"%", sep = ""), 
-                       fill = paste(dat.player1$Last..First[1], ": ", round(TPP_table[,1]*100),"%", sep = "")),
+      geom_density(aes(x = rowMeans(Projections_Player1[,1:5]), #as.numeric(unlist(Projections_Player1[,1:5]))
+                       color = paste(dat.player1$Last..First[1], ": ",TPP_table[,1]*100,"%", sep = ""), 
+                       fill = paste(dat.player1$Last..First[1], ": ",TPP_table[,1]*100,"%", sep = "")),
                    alpha = 0.5) +
-      geom_density(aes(x = rowMeans(Projections_Player2[,1:4]), #as.numeric(unlist(Projections_Player1[,1:4]))
-                       color = paste(dat.player2$Last..First[1], ": ", round(TPP_table[,2]*100),"%", sep = ""), 
-                       fill = paste(dat.player2$Last..First[1], ": ", round(TPP_table[,2]*100),"%", sep = "")),
+      geom_density(aes(x = rowMeans(Projections_Player2[,1:5]), #as.numeric(unlist(Projections_Player1[,1:5]))
+                       color = paste(dat.player2$Last..First[1], ": ",TPP_table[,2]*100,"%", sep = ""), 
+                       fill = paste(dat.player2$Last..First[1], ": ",TPP_table[,2]*100,"%", sep = "")),
                    alpha = 0.5) +
       xlab("Projected DKP") +
       ylab("Density") +
-      scale_color_discrete(name = "Player: Top Player Probability") +
-      scale_fill_discrete(name = "Player: Top Player Probability") +
+      scale_color_discrete(name = "Player") +
+      scale_fill_discrete(name = "Player") +
       ggtitle("Player DKP Projection") +
       theme(plot.title = element_text(hjust = 0.5))
     
@@ -519,34 +570,94 @@ server <- function(input, output) {
               se.fit = T)$se.fit)
     
     ### Player proportion x Team regression
+    # Player 1
+    for (i in 1:nrow(dat.player1)) {
+      dat.player1$Team.DKP[i] <- sum(dat.team1$DKP[which(
+        dat.team1$GameID == dat.player1$GameID[i])],na.rm = T)
+      dat.player1$DKP.Prop[i] <- dat.player1$DKP[i]/dat.player1$Team.DKP[i]
+    }
     
-    ### Determine TPPs
-    TPP_samples <- data.frame(Player1 = sample(density(rowMeans(Projections_Player1[,1:4]))$x, 
-                                               iter, replace = T, 
-                                               prob = density(rowMeans(Projections_Player1[,1:4]))$y),
-                              Player2 = sample(density(rowMeans(Projections_Player2[,1:4]))$x, 
-                                               iter, replace = T, 
-                                               prob = density(rowMeans(Projections_Player2[,1:4]))$y),
-                              Player3 = sample(density(rowMeans(Projections_Player3[,1:4]))$x, 
-                                               iter, replace = T, 
-                                               prob = density(rowMeans(Projections_Player3[,1:4]))$y))
-    TPP_table <- data.frame(Player1 = sum(apply(TPP_samples,1,"which.max")==1)/iter,
-                            Player2 = sum(apply(TPP_samples,1,"which.max")==2)/iter,
-                            Player3 = sum(apply(TPP_samples,1,"which.max")==3)/iter)
+    player1.Project_5.reg <- lm(data = dat.player1, formula = Team.DKP ~ Spread + Team.pts + H.A)
+    Projections_Player1$Project_5 <- rep(predict.lm(object = player1.Project_5.reg, 
+                                                    newdata = data.frame(Spread = input$Spread1,
+                                                                         Team.pts = input$Over.Under1/2 - input$Spread1/2,
+                                                                         H.A = input$H.A1)),iter)
+    Projections_Player1$Project_5 <- Projections_Player1$Project_5 +
+      rnorm(iter, mean = 0, 
+            sd = summary(player1.Project_5.reg)$sigma)
+    
+    Projections_Player1$Project_5 <- Projections_Player1$Project_5 *
+      sample(x = density(dat.player1$DKP.Prop)$x, size = iter, replace = T, prob = density(dat.player1$DKP.Prop)$y)
+    
+    # Player 2
+    for (j in 1:nrow(dat.player2)) {
+      dat.player2$Team.DKP[j] <- sum(dat.team2$DKP[which(
+        dat.team2$GameID == dat.player2$GameID[j])],na.rm = T)
+      dat.player2$DKP.Prop[j] <- dat.player2$DKP[j]/dat.player2$Team.DKP[j]
+    }
+    
+    player2.Project_5.reg <- lm(data = dat.player2, formula = Team.DKP ~ Spread + Team.pts + H.A)
+    Projections_Player2$Project_5 <- rep(predict.lm(object = player2.Project_5.reg, 
+                                                    newdata = data.frame(Spread = input$Spread2,
+                                                                         Team.pts = input$Over.Under2/2 - input$Spread2/2,
+                                                                         H.A = input$H.A2)),iter)
+    Projections_Player2$Project_5 <- Projections_Player2$Project_5 +
+      rnorm(iter, mean = 0, 
+            sd = summary(player2.Project_5.reg)$sigma)
+    
+    Projections_Player2$Project_5 <- Projections_Player2$Project_5 *
+      sample(x = density(dat.player2$DKP.Prop)$x, size = iter, replace = T, prob = density(dat.player2$DKP.Prop)$y)
+    
+    # Player 1
+    for (k in 1:nrow(dat.player3)) {
+      dat.player3$Team.DKP[k] <- sum(dat.team3$DKP[which(
+        dat.team3$GameID == dat.player3$GameID[k])],na.rm = T)
+      dat.player3$DKP.Prop[k] <- dat.player3$DKP[k]/dat.player3$Team.DKP[k]
+    }
+    
+    player3.Project_5.reg <- lm(data = dat.player3, formula = Team.DKP ~ Spread + Team.pts + H.A)
+    Projections_Player3$Project_5 <- rep(predict.lm(object = player3.Project_5.reg, 
+                                                    newdata = data.frame(Spread = input$Spread3,
+                                                                         Team.pts = input$Over.Under3/2 - input$Spread3/2,
+                                                                         H.A = input$H.A3)),iter)
+    Projections_Player3$Project_5 <- Projections_Player3$Project_5 +
+      rnorm(iter, mean = 0, 
+            sd = summary(player3.Project_5.reg)$sigma)
+    
+    Projections_Player3$Project_5 <- Projections_Player3$Project_5 *
+      sample(x = density(dat.player3$DKP.Prop)$x, size = iter, replace = T, prob = density(dat.player3$DKP.Prop)$y)
+    
+    ### Get TPPs
+    TPP_draws <- data.frame(Player1 = sample(x = density(unlist(as.list(Projections_Player1[,1:5])))$x,
+                                             size = iter,
+                                             replace = T,
+                                             prob = density(unlist(as.list(Projections_Player1[,1:5])))$y),
+                            Player2 = sample(x = density(unlist(as.list(Projections_Player2[,1:5])))$x,
+                                             size = iter,
+                                             replace = T,
+                                             prob = density(unlist(as.list(Projections_Player2[,1:5])))$y),
+                            Player3 = sample(x = density(unlist(as.list(Projections_Player3[,1:5])))$x,
+                                             size = iter,
+                                             replace = T,
+                                             prob = density(unlist(as.list(Projections_Player3[,1:5])))$y))
+    
+    TPP_table <- data.frame(Player1 = length(which(apply(TPP_draws, 1, FUN = "which.max") == 1))/iter,
+                            Player2 = length(which(apply(TPP_draws, 1, FUN = "which.max") == 2))/iter,
+                            Player3 = length(which(apply(TPP_draws, 1, FUN = "which.max") == 3))/iter)
     
     ### Produce distribution of projections
     ggplot() +
-      geom_density(aes(x = rowMeans(Projections_Player1[,1:4]), #as.numeric(unlist(Projections_Player1[,1:4]))
-                       color = paste(dat.player1$Last..First[1], ": ", round(TPP_table[,1]*100),"%", sep = ""), 
-                       fill = paste(dat.player1$Last..First[1], ": ", round(TPP_table[,1]*100),"%", sep = "")),
+      geom_density(aes(x = rowMeans(Projections_Player1[,1:5]), #as.numeric(unlist(Projections_Player1[,1:5]))
+                       color = paste(dat.player1$Last..First[1], ": ",TPP_table[,1]*100,"%", sep = ""), 
+                       fill = paste(dat.player1$Last..First[1], ": ",TPP_table[,1]*100,"%", sep = "")),
                    alpha = 0.5) +
-      geom_density(aes(x = rowMeans(Projections_Player2[,1:4]), #as.numeric(unlist(Projections_Player1[,1:4]))
-                       color = paste(dat.player2$Last..First[1], ": ", round(TPP_table[,2]*100),"%", sep = ""), 
-                       fill = paste(dat.player2$Last..First[1], ": ", round(TPP_table[,2]*100),"%", sep = "")),
+      geom_density(aes(x = rowMeans(Projections_Player2[,1:5]), #as.numeric(unlist(Projections_Player1[,1:5]))
+                       color = paste(dat.player2$Last..First[1], ": ",TPP_table[,2]*100,"%", sep = ""), 
+                       fill = paste(dat.player2$Last..First[1], ": ",TPP_table[,2]*100,"%", sep = "")),
                    alpha = 0.5) +
-      geom_density(aes(x = rowMeans(Projections_Player3[,1:4]), #as.numeric(unlist(Projections_Player1[,1:4]))
-                       color = paste(dat.player3$Last..First[1], ": ", round(TPP_table[,3]*100),"%", sep = ""), 
-                       fill = paste(dat.player3$Last..First[1], ": ", round(TPP_table[,3]*100),"%", sep = "")),
+      geom_density(aes(x = rowMeans(Projections_Player3[,1:5]), #as.numeric(unlist(Projections_Player1[,1:5]))
+                       color = paste(dat.player3$Last..First[1], ": ",TPP_table[,3]*100,"%", sep = ""), 
+                       fill = paste(dat.player3$Last..First[1], ": ",TPP_table[,3]*100,"%", sep = "")),
                    alpha = 0.5) +
       xlab("Projected DKP") +
       ylab("Density") +
@@ -556,7 +667,9 @@ server <- function(input, output) {
       theme(plot.title = element_text(hjust = 0.5))
     
   } else {}
+    
+    
   })
-}
+  }
 
 shinyApp(ui = ui, server = server)
