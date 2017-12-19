@@ -12,7 +12,7 @@ require(corrplot)
 load("data/NBA_2017.RData")
 
 ## Consideration cutoff: How many DKP must a player score to be considered for correlation?
-cutoff <- 50
+cutoff <- 150
 
 ## Create correlation matrix for each team.
 uniq.teams <- sort(unique(NBA_17$Team))
