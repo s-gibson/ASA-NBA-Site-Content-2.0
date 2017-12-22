@@ -5,9 +5,9 @@ account: stewart-gibson
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 241401
-bundleId: 1141957
+bundleId: 1148019
 url: https://stewart-gibson.shinyapps.io/player_fantasy_projection_app/
-when: 1513649859.19629
+when: 1513960856.25804
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: Player Fantasy Projection App.R

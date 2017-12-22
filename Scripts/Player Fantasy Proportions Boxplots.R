@@ -79,7 +79,7 @@ for (i in 1:length(uniq.teams)) {
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
     xlab("") +
     ylab("% of Team Fantasy Points") +
-    ggtitle(paste(toupper(dat$Team[i]), "Proportion of Team Offensive Fantasy Points", sep = " ")) +
+    ggtitle(paste(toupper(dat$Team[i]), "Proportion of Team Fantasy Points", sep = " ")) +
     theme(plot.title = element_text(hjust = 0.5))
   
   ggsave(paste("Visualizations/Player Fantasy Proportions/",
