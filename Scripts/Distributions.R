@@ -81,7 +81,7 @@ for (i in 1:length(uniq.players)) {
     scale_y_continuous(limits = c(0, .2)) +
     ggtitle(paste(dat$First..Last[1], "DK Points Distribution", sep = " ")) +
     theme(plot.title = element_text(hjust = 0.5))
-  ggsave(paste('Visualizations/Distributions/DK Points/', 
+  ggsave(paste('Visualizations/Distributions/DK Points/',
                dat$First..Last[1],'.png', sep = ''))
 
   ggplot(data = dat[which(dat$DK.Sal > 0),]) +
@@ -89,7 +89,7 @@ for (i in 1:length(uniq.players)) {
     xlab("DK Salary") +
     scale_x_continuous(limits = c(2500, 13000)) +
     scale_y_continuous(limits = c(0, 0.005)) +
-    ggtitle(paste(dat$First.Last[1], "DK Salary Distribution", sep = " ")) +
+    ggtitle(paste(dat$First..Last[1], "DK Salary Distribution", sep = " ")) +
     theme(plot.title = element_text(hjust = 0.5))
   ggsave(paste('Visualizations/Distributions/Salary/',
                dat$First..Last[1],'.png', sep = ''))
@@ -99,7 +99,7 @@ for (i in 1:length(uniq.players)) {
     xlab("DK Points/$1K") +
     scale_x_continuous(limits = c(-0.5, 15)) +
     scale_y_continuous(limits = c(0, .75)) +
-    ggtitle(paste(dat$First.Last[1], "DK Fantasy Points/$1K", sep = " ")) +
+    ggtitle(paste(dat$First..Last[1], "DK Fantasy Points/$1K", sep = " ")) +
     theme(plot.title = element_text(hjust = 0.5))
   ggsave(paste('Visualizations/Distributions/DKP per 1K/', 
                dat$First..Last[1],'.png', sep = ''))
